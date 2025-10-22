@@ -15,6 +15,8 @@ void main() async {
   Hive.registerAdapter(WishListAdapter());
   Hive.registerAdapter(TaskAdapter());
 
+  await Hive.openBox<WishList>('wishlists');
+
   runApp(ProviderScope(child: MainApp()));
 }
 

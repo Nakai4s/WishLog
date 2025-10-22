@@ -4,15 +4,15 @@ import 'task.dart';
 part 'wishlist.g.dart';
 
 @HiveType(typeId: 0)
-class WishList {
+class WishList extends HiveObject {
   @HiveField(0)
-  final String id;
+  String id;
   @HiveField(1)
-  final String title;
+  String title;
   @HiveField(2)
-  final DateTime deadline;
+  DateTime deadline;
   @HiveField(3)
-  final List<Task> tasks;
+  List<Task> tasks;
 
   WishList({
     required this.id,

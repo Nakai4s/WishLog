@@ -29,7 +29,7 @@ class WishListListScreen extends ConsumerWidget {
               );
             },
             onDelete: () {
-              notifier.deleteWishList(wish.id);
+              notifier.deleteWishListById(wish.id);
             },
           );
         },

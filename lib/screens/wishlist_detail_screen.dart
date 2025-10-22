@@ -55,7 +55,7 @@ class WishListDetailScreen extends ConsumerWidget {
                   onDelete: () {
                     final updatedTasks = List.of(wish.tasks)..removeAt(index);
                     final updatedWish = wish.copyWith(tasks: updatedTasks);
-                    notifier.updateWishList(updatedWish);
+                    notifier.updateWishListById(updatedWish.id);
                   },
                 );
               },
