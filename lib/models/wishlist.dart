@@ -1,9 +1,17 @@
+import 'package:hive/hive.dart';
 import 'task.dart';
 
+part 'wishlist.g.dart';
+
+@HiveType(typeId: 0)
 class WishList {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String title;
+  @HiveField(2)
   final DateTime deadline;
+  @HiveField(3)
   final List<Task> tasks;
 
   WishList({
