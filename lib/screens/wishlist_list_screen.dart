@@ -36,9 +36,6 @@ class WishListListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: ()  {
-          // 簡易追加（実際はダイアログやフォームが必要）
-          // final now = DateTime.now();
-          // await notifier.addWishList('新しい願い', now.add(const Duration(days: 30)));
           _showAddWishDialog(context, ref);
         },
         child: const Icon(Icons.add),
@@ -46,6 +43,7 @@ class WishListListScreen extends ConsumerWidget {
     );
   }
 
+  // タイトルと期日を入力するダイアログを表示
   Future<void> _showAddWishDialog(BuildContext context, WidgetRef ref) async {
     final titleController = TextEditingController();
     DateTime? selectedDate;
