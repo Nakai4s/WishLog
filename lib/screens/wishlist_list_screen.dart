@@ -29,7 +29,28 @@ class WishListListScreen extends ConsumerWidget {
               );
             },
             onDelete: () {
-              notifier.deleteWishListById(wish.id);
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    title: const Text('確認'),
+                    content: const Text('本当にこのウィッシュを削除しますか？'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('キャンセル'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          notifier.deleteWishListById(wish.id);
+                        },
+                        child: const Text('削除'),
+                      ),
+                    ],
+                  );
+                },
+              );
             },
           );
         },
