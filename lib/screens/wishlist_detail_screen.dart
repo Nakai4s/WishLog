@@ -49,11 +49,7 @@ class WishListDetailScreen extends ConsumerWidget {
                 return TaskTile(
                   task: task,
                   onToggle: () => notifier.toggleTaskComplete(wish.id, task.id),
-                  onDelete: () {
-                    final updatedTasks = List.of(wish.tasks)..removeAt(index);
-                    final updatedWish = wish.copyWith(tasks: updatedTasks);
-                    notifier.updateWishListById(updatedWish.id);
-                  },
+                  onDelete: () => notifier.removeTask(wish.id, task.id),
                 );
               },
             ),
@@ -78,7 +74,6 @@ class WishListDetailScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          // title: const Text('タスクを追加'),
           content: TextField(
             controller: controller,
             decoration: const InputDecoration(labelText: 'タスク名を入力'),

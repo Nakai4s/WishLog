@@ -18,6 +18,7 @@ class TaskTile extends StatelessWidget {
     return CheckboxListTile(
       value: task.isCompleted,
       onChanged: (_) => onToggle(),
+      controlAffinity: ListTileControlAffinity.leading,
       title: Text(
         task.title,
         style: TextStyle(
@@ -26,7 +27,7 @@ class TaskTile extends StatelessWidget {
       ),
       secondary: IconButton(
         icon: const Icon(Icons.delete),
-        onPressed: onDelete,
+        onPressed: () => onDelete(),
       ),
     );
   }
