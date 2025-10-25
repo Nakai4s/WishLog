@@ -7,11 +7,11 @@ class TaskTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   const TaskTile({
-    Key? key,
+    super.key,
     required this.task,
     required this.onToggle,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -34,7 +34,7 @@ class WishListTile extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '達成率 ${(percent * 100).round()}% ・残り ${remaining}日',
+              '達成率 ${(percent * 100).round()}% ・残り $remaining日',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

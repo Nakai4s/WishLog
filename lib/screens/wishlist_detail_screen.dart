@@ -7,10 +7,7 @@ import '../widgets/task_tile.dart';
 class WishListDetailScreen extends ConsumerWidget {
   final String wishListId;
 
-  const WishListDetailScreen({
-    Key? key,
-    required this.wishListId,
-  }) : super(key: key);
+  const WishListDetailScreen({super.key,required this.wishListId,});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

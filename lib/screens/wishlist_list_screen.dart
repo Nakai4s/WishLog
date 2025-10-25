@@ -6,7 +6,7 @@ import '../widgets/wishlist_tile.dart';
 
 // ウィッシュリスト一覧画面
 class WishListListScreen extends ConsumerWidget {
-  const WishListListScreen({Key? key}) : super(key: key);
+  const WishListListScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,7 +18,7 @@ class WishListListScreen extends ConsumerWidget {
         title: const Text('ウィッシュログ'),
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.delete),
+            icon: const Icon(Icons.bookmark),
             tooltip: 'Show Snackbar',
             onPressed: () {
               ScaffoldMessenger.of(
