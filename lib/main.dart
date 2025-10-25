@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import "package:hive/hive.dart";
 import 'package:path_provider/path_provider.dart';
@@ -28,6 +29,16 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       title: 'WishLog',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('ja', 'JP'),
+      supportedLocales: const[
+        Locale('en', 'US'),
+        Locale('ja', 'JP'),        
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         primarySwatch: Colors.green,
         useMaterial3: true,
