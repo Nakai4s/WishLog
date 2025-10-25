@@ -4,6 +4,7 @@ import 'package:wishlog/screens/wishlist_detail_screen.dart';
 import '../providers/wishlist_provider.dart';
 import '../widgets/wishlist_tile.dart';
 
+// ウィッシュリスト一覧画面
 class WishListListScreen extends ConsumerWidget {
   const WishListListScreen({Key? key}) : super(key: key);
 
@@ -13,7 +14,20 @@ class WishListListScreen extends ConsumerWidget {
     final notifier = ref.read(wishListProvider.notifier);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('WishLog')),
+      appBar: AppBar(
+        title: const Text('ウィッシュログ'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'Show Snackbar',
+            onPressed: () {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(const SnackBar(content: Text('This is a snackbar')));
+            },
+          ),
+        ]
+      ),
       body: ListView.builder(
         itemCount: wishLists.length,
         itemBuilder: (context, index) {
@@ -73,7 +87,7 @@ class WishListListScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('新しいウィッシュ'),
+          //title: const Text('新しいウィッシュ'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

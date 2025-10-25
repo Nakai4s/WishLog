@@ -8,11 +8,11 @@ class WishListTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   const WishListTile({
-    Key? key,
+    super.key,
     required this.wish,
     required this.onTap,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

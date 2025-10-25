@@ -81,10 +81,10 @@ class WishListDetailScreen extends ConsumerWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('タスクを追加'),
+          // title: const Text('タスクを追加'),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(hintText: 'タスク名を入力'),
+            decoration: const InputDecoration(labelText: 'タスク名を入力'),
           ),
           actions: [
             TextButton(
