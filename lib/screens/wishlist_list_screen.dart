@@ -16,17 +16,6 @@ class WishListListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ウィッシュログ'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.bookmark),
-            tooltip: 'Show Snackbar',
-            onPressed: () {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('This is a snackbar')));
-            },
-          ),
-        ]
       ),
       body: ListView.builder(
         itemCount: wishLists.length,
@@ -48,7 +37,7 @@ class WishListListScreen extends ConsumerWidget {
                 builder: (context) {
                   return AlertDialog(
                     title: const Text('確認'),
-                    content: const Text('本当にこのウィッシュを削除しますか？'),
+                    content: Text('${wish.title}を削除しますか？'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -86,50 +75,61 @@ class WishListListScreen extends ConsumerWidget {
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          //title: const Text('新しいウィッシュ'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'タイトル'),
+        return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'ウィッシュリスト名'),
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: now,
+                      firstDate: now,
+                      lastDate: DateTime(now.year + 1),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        selectedDate = picked;
+                      });                    
+                    }
+                  },
+                  child: const Text('期限を選択'),
+                ),
+                const SizedBox(height: 10),              
+                // 期日の表示
+                Text(
+                  selectedDate == null
+                      ? '期日：未選択'
+                      : '期日：${selectedDate!.toLocal().toString().split(' ')[0]}',
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('キャンセル'),
               ),
-              const SizedBox(height: 10),
               ElevatedButton(
-                onPressed: () async {
-                  final now = DateTime.now();
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: now,
-                    firstDate: now,
-                    lastDate: DateTime(now.year + 5),
-                  );
-                  if (picked != null) {
-                    selectedDate = picked;
+                onPressed: () {
+                  if(titleController.text.isNotEmpty && selectedDate != null){
+                    ref.read(wishListProvider.notifier)
+                      .addWishList(titleController.text, selectedDate!);
+                    Navigator.pop(context);
                   }
                 },
-                child: const Text('期限を選択'),
+                child: const Text('追加'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty && selectedDate != null) {
-                  ref.read(wishListProvider.notifier)
-                      .addWishList(titleController.text, selectedDate!);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('追加'),
-            ),
-          ],
-        );
+          );
+        });
       },
     );
   }

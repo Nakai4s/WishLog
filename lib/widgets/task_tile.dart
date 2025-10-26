@@ -26,7 +26,7 @@ class TaskTile extends StatelessWidget {
         ),
       ),
       secondary: IconButton(
-        icon: const Icon(Icons.delete),
+        icon: const Icon(Icons.delete_sweep),
         onPressed: () => onDelete(),
       ),
     );

@@ -25,12 +25,14 @@ class WishListTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 4),
             LinearPercentIndicator(
               lineHeight: 8.0,
               percent: percent,
               progressColor: Colors.green,
               backgroundColor: Colors.grey[300],
-              animation: true,
+              animation: false,
+              padding: EdgeInsets.zero,
             ),
             const SizedBox(height: 4),
             Text(
@@ -40,10 +42,12 @@ class WishListTile extends StatelessWidget {
           ],
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.delete),
+          icon: const Icon(Icons.delete_sweep),
           onPressed: onDelete,
+          padding: EdgeInsets.zero,
         ),
         onTap: onTap,
+        contentPadding: EdgeInsets.symmetric(vertical:1.0, horizontal:16.0),
       ),
     );
   }
