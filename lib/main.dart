@@ -18,7 +18,7 @@ void main() async {
 
   await Hive.openBox<WishList>('wishlists');
 
-  runApp(ProviderScope(child: MainApp()));
+  runApp(const ProviderScope(child: MainApp()));
 }
 
 class MainApp extends StatelessWidget {
@@ -30,7 +30,7 @@ class MainApp extends StatelessWidget {
       title: 'WishLog',
       debugShowCheckedModeBanner: false,
       locale: const Locale('ja', 'JP'),
-      supportedLocales: const[
+      supportedLocales: const [
         Locale('en', 'US'),
         Locale('ja', 'JP'),        
       ],

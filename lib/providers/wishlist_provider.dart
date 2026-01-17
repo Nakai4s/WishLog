@@ -8,19 +8,13 @@ final wishListProvider =
     NotifierProvider<WishListNotifier, List<WishList>>(WishListNotifier.new);
 
 class WishListNotifier extends Notifier<List<WishList>> {
-  final _uuid = Uuid();
+  static const _uuid = Uuid();
   late Box<WishList> _box;
 
   @override
   List<WishList> build() {
     _box = Hive.box<WishList>('wishlists');
     return _box.values.toList();
-  }
-
-  // 初期化：Hive Boxを開いてデータ読み込み
-  Future<void> loadFromStorage() async {
-    _box = Hive.box<WishList>('wishlists');
-    state = _box.values.toList();
   }
 
   // 保存：全件保存（上書き）

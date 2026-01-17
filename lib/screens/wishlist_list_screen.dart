@@ -48,6 +48,10 @@ class WishListListScreen extends ConsumerWidget {
                           Navigator.pop(context);
                           notifier.deleteWishListById(wish.id);
                         },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
                         child: const Text('削除'),
                       ),
                     ],
@@ -59,7 +63,7 @@ class WishListListScreen extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: ()  {
+        onPressed: () {
           _showAddWishDialog(context, ref);
         },
         child: const Icon(Icons.add),
@@ -78,6 +82,7 @@ class WishListListScreen extends ConsumerWidget {
         return StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
+            title: const Text('新しいウィッシュ'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -119,7 +124,7 @@ class WishListListScreen extends ConsumerWidget {
               ),
               ElevatedButton(
                 onPressed: () {
-                  if(titleController.text.isNotEmpty && selectedDate != null){
+                  if (titleController.text.isNotEmpty && selectedDate != null) {
                     ref.read(wishListProvider.notifier)
                       .addWishList(titleController.text, selectedDate!);
                     Navigator.pop(context);

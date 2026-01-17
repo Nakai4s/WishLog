@@ -47,7 +47,7 @@ class WishListTile extends StatelessWidget {
           padding: EdgeInsets.zero,
         ),
         onTap: onTap,
-        contentPadding: EdgeInsets.symmetric(vertical:1.0, horizontal:16.0),
+        contentPadding: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 16.0),
       ),
     );
   }
