@@ -4,8 +4,22 @@ import '../models/task.dart';
 import '../models/wishlist.dart';
 import 'package:hive/hive.dart';
 
+// デフォルトウィッシュリストのID（固定）
+const _defaultWishListId = 'default-wishlist';
+
 final wishListProvider =
     NotifierProvider<WishListNotifier, List<WishList>>(WishListNotifier.new);
+
+// デフォルトウィッシュリストを取得するプロバイダー
+final defaultWishListProvider = Provider<WishList?>((ref) {
+  final wishLists = ref.watch(wishListProvider);
+  if (wishLists.isEmpty) return null;
+  // デフォルトウィッシュリストを探す、なければ最初のものを返す
+  return wishLists.firstWhere(
+    (w) => w.id == _defaultWishListId,
+    orElse: () => wishLists.first,
+  );
+});
 
 class WishListNotifier extends Notifier<List<WishList>> {
   static const _uuid = Uuid();
@@ -14,41 +28,70 @@ class WishListNotifier extends Notifier<List<WishList>> {
   @override
   List<WishList> build() {
     _box = Hive.box<WishList>('wishlists');
+    _ensureDefaultWishListExists();
+    _migrateMultipleWishLists();
     return _box.values.toList();
   }
 
-  // 保存：全件保存（上書き）
-  Future<void> saveToStorage() async {
-    await _box.clear();
-    for (final wish in state) {
-      await _box.put(wish.id, wish);
+  // デフォルトウィッシュリストが存在しない場合は作成
+  Future<void> _ensureDefaultWishListExists() async {
+    if (_box.isEmpty) {
+      final defaultWish = WishList(
+        id: _defaultWishListId,
+        title: 'ウィッシュログ',
+        tasks: [],
+      );
+      await _box.put(_defaultWishListId, defaultWish);
     }
   }
 
-  // ウィッシュリストを追加
-  Future<void> addWishList(String title, DateTime deadline) async {
-    final id = _uuid.v4();
-    final wish = WishList(id: id, title: title, deadline: deadline, tasks: []);
-    await _box.put(id, wish); // id をキーとして保存
-    state = _box.values.toList();
+  // 複数ウィッシュリストがある場合、タスクを統合してマイグレーション
+  Future<void> _migrateMultipleWishLists() async {
+    if (_box.length <= 1) return;
+
+    // デフォルトウィッシュリストを取得または作成
+    WishList? defaultWish = _box.get(_defaultWishListId);
+    if (defaultWish == null) {
+      // デフォルトが無い場合は最初のものをデフォルトとして使用
+      final first = _box.values.first;
+      defaultWish = WishList(
+        id: _defaultWishListId,
+        title: 'ウィッシュログ',
+        tasks: List<Task>.from(first.tasks),
+      );
+      await _box.put(_defaultWishListId, defaultWish);
+    }
+
+    // 他のウィッシュリストからタスクを統合
+    final allTasks = <Task>[];
+    allTasks.addAll(defaultWish.tasks);
+
+    final keysToDelete = <String>[];
+    for (final wish in _box.values) {
+      if (wish.id != _defaultWishListId) {
+        allTasks.addAll(wish.tasks);
+        keysToDelete.add(wish.id);
+      }
+    }
+
+    // タスクを統合して保存
+    defaultWish.tasks = allTasks;
+    await defaultWish.save();
+
+    // 他のウィッシュリストを削除
+    for (final key in keysToDelete) {
+      await _box.delete(key);
+    }
   }
 
-  Future<void> deleteWishListById(String id) async {
-    await _box.delete(id);
-    state = _box.values.toList();
+  // デフォルトウィッシュリストを取得
+  WishList? get defaultWishList {
+    return _box.get(_defaultWishListId) ?? _box.values.firstOrNull;
   }
 
-  Future<void> updateWishListById(String id, {String? title, DateTime? deadline}) async {
-    final wish = _box.get(id);
-    if (wish == null) return;
-    if (title != null) wish.title = title;
-    if (deadline != null) wish.deadline = deadline;
-    await wish.save(); // HiveObject の save()
-    state = _box.values.toList();
-  }
-
-  Future<void> addTaskToWishList(String wishId, String taskTitle) async {
-    final wish = _box.get(wishId);
+  // タスクを追加
+  Future<void> addTask(String taskTitle) async {
+    final wish = defaultWishList;
     if (wish == null) return;
     final task = Task(id: _uuid.v4(), title: taskTitle);
     wish.tasks = [...wish.tasks, task];
@@ -56,8 +99,9 @@ class WishListNotifier extends Notifier<List<WishList>> {
     state = _box.values.toList();
   }
 
-  Future<void> toggleTaskComplete(String wishId, String taskId) async {
-    final wish = _box.get(wishId);
+  // タスクの完了状態をトグル
+  Future<void> toggleTaskComplete(String taskId) async {
+    final wish = defaultWishList;
     if (wish == null) return;
     final updated = wish.tasks.map((t) {
       if (t.id == taskId) return t.copyWith(isCompleted: !t.isCompleted);
@@ -68,8 +112,9 @@ class WishListNotifier extends Notifier<List<WishList>> {
     state = _box.values.toList();
   }
 
-  Future<void> removeTask(String wishId, String taskId) async {
-    final wish = _box.get(wishId);
+  // タスクを削除
+  Future<void> removeTask(String taskId) async {
+    final wish = defaultWishList;
     if (wish == null) return;
     wish.tasks = wish.tasks.where((t) => t.id != taskId).toList();
     await wish.save();

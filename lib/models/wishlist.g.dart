@@ -19,7 +19,7 @@ class WishListAdapter extends TypeAdapter<WishList> {
     return WishList(
       id: fields[0] as String,
       title: fields[1] as String,
-      deadline: fields[2] as DateTime,
+      deadline: fields[2] as DateTime?,
       tasks: (fields[3] as List).cast<Task>(),
     );
   }

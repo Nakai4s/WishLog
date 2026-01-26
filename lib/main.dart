@@ -5,7 +5,7 @@ import "package:hive/hive.dart";
 import 'package:path_provider/path_provider.dart';
 import 'package:wishlog/models/task.dart';
 import 'package:wishlog/models/wishlist.dart';
-import 'screens/wishlist_list_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   // フラッターエンジンの初期化(非同期処理を行う前に必要)
@@ -32,7 +32,7 @@ class MainApp extends StatelessWidget {
       locale: const Locale('ja', 'JP'),
       supportedLocales: const [
         Locale('en', 'US'),
-        Locale('ja', 'JP'),        
+        Locale('ja', 'JP'),
       ],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -44,7 +44,7 @@ class MainApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: '851MkPOP',
       ),
-      home: const WishListListScreen(),
+      home: const HomeScreen(),
     );
   }
 }

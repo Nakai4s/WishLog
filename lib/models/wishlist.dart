@@ -10,14 +10,14 @@ class WishList extends HiveObject {
   @HiveField(1)
   String title;
   @HiveField(2)
-  DateTime deadline;
+  DateTime? deadline; // オプショナルに変更（後方互換性のため保持）
   @HiveField(3)
   List<Task> tasks;
 
   WishList({
     required this.id,
     required this.title,
-    required this.deadline,
+    this.deadline, // オプショナルに
     this.tasks = const [],
   });
 
@@ -26,12 +26,6 @@ class WishList extends HiveObject {
     if (tasks.isEmpty) return 0;
     final completed = tasks.where((task) => task.isCompleted).length;
     return completed / tasks.length;
-  }
-
-  // 残り日数を取得する。
-  int get remainingDays {
-    final now = DateTime.now();
-    return deadline.difference(now).inDays;
   }
 
   WishList copyWith({
