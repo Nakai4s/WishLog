@@ -89,6 +89,13 @@ class WishListNotifier extends Notifier<List<WishList>> {
     return _box.get(_defaultWishListId) ?? _box.values.firstOrNull;
   }
 
+  // 状態を更新（新しいオブジェクトを作成してRiverpodに変更を検知させる）
+  void _updateState() {
+    state = _box.values
+        .map((w) => w.copyWith(tasks: List<Task>.from(w.tasks)))
+        .toList();
+  }
+
   // タスクを追加
   Future<void> addTask(String taskTitle) async {
     final wish = defaultWishList;
@@ -96,7 +103,7 @@ class WishListNotifier extends Notifier<List<WishList>> {
     final task = Task(id: _uuid.v4(), title: taskTitle);
     wish.tasks = [...wish.tasks, task];
     await wish.save();
-    state = _box.values.toList();
+    _updateState();
   }
 
   // タスクの完了状態をトグル
@@ -109,7 +116,7 @@ class WishListNotifier extends Notifier<List<WishList>> {
     }).toList();
     wish.tasks = updated;
     await wish.save();
-    state = _box.values.toList();
+    _updateState();
   }
 
   // タスクを削除
@@ -118,6 +125,6 @@ class WishListNotifier extends Notifier<List<WishList>> {
     if (wish == null) return;
     wish.tasks = wish.tasks.where((t) => t.id != taskId).toList();
     await wish.save();
-    state = _box.values.toList();
+    _updateState();
   }
 }

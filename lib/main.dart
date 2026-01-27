@@ -42,7 +42,7 @@ class MainApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.green,
         useMaterial3: true,
-        fontFamily: '851MkPOP',
+        //fontFamily: '851MkPOP',
       ),
       home: const HomeScreen(),
     );

@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(wish.title),
+        title: const Text('ウィッシュログ'),
       ),
       body: Column(
         children: [
