@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task.dart';
+import '../models/category.dart';
 import '../models/wishlist.dart';
 import 'package:hive/hive.dart';
+import 'year_provider.dart';
+import 'category_provider.dart';
 
 // デフォルトウィッシュリストのID（固定）
 const _defaultWishListId = 'default-wishlist';
@@ -19,6 +22,35 @@ final defaultWishListProvider = Provider<WishList?>((ref) {
     (w) => w.id == _defaultWishListId,
     orElse: () => wishLists.first,
   );
+});
+
+// フィルタリングされたタスク一覧
+final filteredTasksProvider = Provider<List<Task>>((ref) {
+  final wish = ref.watch(defaultWishListProvider);
+  if (wish == null) return [];
+
+  final selectedYear = ref.watch(selectedYearProvider);
+  final selectedCategory = ref.watch(selectedCategoryProvider);
+
+  return wish.tasks.where((task) {
+    // 年度フィルター（nullは「すべて」、タスクのyearがnullでも一致）
+    if (selectedYear != null && task.year != null && task.year != selectedYear) {
+      return false;
+    }
+    // カテゴリフィルター
+    if (selectedCategory != null && task.category != selectedCategory) {
+      return false;
+    }
+    return true;
+  }).toList();
+});
+
+// フィルター後の達成率
+final filteredCompletionRateProvider = Provider<double>((ref) {
+  final tasks = ref.watch(filteredTasksProvider);
+  if (tasks.isEmpty) return 0.0;
+  final completedCount = tasks.where((t) => t.isCompleted).length;
+  return completedCount / tasks.length;
 });
 
 class WishListNotifier extends Notifier<List<WishList>> {
@@ -97,10 +129,19 @@ class WishListNotifier extends Notifier<List<WishList>> {
   }
 
   // タスクを追加
-  Future<void> addTask(String taskTitle) async {
+  Future<void> addTask(
+    String taskTitle, {
+    int? year,
+    TaskCategory? category,
+  }) async {
     final wish = defaultWishList;
     if (wish == null) return;
-    final task = Task(id: _uuid.v4(), title: taskTitle);
+    final task = Task(
+      id: _uuid.v4(),
+      title: taskTitle,
+      year: year,
+      category: category,
+    );
     wish.tasks = [...wish.tasks, task];
     await wish.save();
     _updateState();

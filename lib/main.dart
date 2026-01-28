@@ -5,6 +5,7 @@ import "package:hive/hive.dart";
 import 'package:path_provider/path_provider.dart';
 import 'package:wishlog/models/task.dart';
 import 'package:wishlog/models/wishlist.dart';
+import 'package:wishlog/models/category.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -15,6 +16,7 @@ void main() async {
 
   Hive.registerAdapter(WishListAdapter());
   Hive.registerAdapter(TaskAdapter());
+  Hive.registerAdapter(TaskCategoryAdapter());
 
   await Hive.openBox<WishList>('wishlists');
 
