@@ -30,6 +30,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedYear = ref.read(selectedYearProvider);
     final selectedCategory = ref.read(selectedCategoryProvider);
 
+    if (selectedYear == null) return;
+
     notifier.addTask(
       _taskController.text,
       year: selectedYear,
@@ -40,7 +42,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final wish = ref.watch(defaultWishListProvider);
     final notifier = ref.read(wishListProvider.notifier);
     final filteredTasks = ref.watch(filteredTasksProvider);
     final completionRate = ref.watch(filteredCompletionRateProvider);
@@ -48,40 +49,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final availableYears = ref.watch(availableYearsProvider);
 
-    if (wish == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('ウィッシュログ'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('ウィッシュログ'),
         actions: [
           // 年度選択ドロップダウン
-          DropdownButton<int?>(
-            value: selectedYear,
+          DropdownButton<int>(
+            value: selectedYear ?? DateTime.now().year,
             underline: const SizedBox(),
             icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
             dropdownColor: Theme.of(context).primaryColor,
             style: const TextStyle(color: Colors.white),
-            items: [
-              const DropdownMenuItem<int?>(
-                value: null,
-                child: Text('すべて'),
-              ),
-              ...availableYears.map((year) => DropdownMenuItem<int?>(
-                    value: year,
-                    child: Text('$year年'),
-                  )),
-            ],
+            items: availableYears.map((year) => DropdownMenuItem<int>(
+                  value: year,
+                  child: Text('$year年'),
+                )).toList(),
             onChanged: (value) {
-              ref.read(selectedYearProvider.notifier).setYear(value);
+              if (value != null) {
+                ref.read(selectedYearProvider.notifier).setYear(value);
+              }
             },
           ),
           const SizedBox(width: 8),
@@ -150,8 +136,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       final task = filteredTasks[index];
                       return TaskTile(
                         task: task,
-                        onToggle: () => notifier.toggleTaskComplete(task.id),
-                        onDelete: () => notifier.removeTask(task.id),
+                        onToggle: () => notifier.toggleTaskComplete(
+                            task.id, selectedYear ?? DateTime.now().year),
+                        onDelete: () => notifier.removeTask(
+                            task.id, selectedYear ?? DateTime.now().year),
                       );
                     },
                   ),

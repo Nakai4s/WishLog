@@ -21,13 +21,14 @@ class WishListAdapter extends TypeAdapter<WishList> {
       title: fields[1] as String,
       deadline: fields[2] as DateTime?,
       tasks: (fields[3] as List).cast<Task>(),
+      year: fields[4] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, WishList obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class WishListAdapter extends TypeAdapter<WishList> {
       ..writeByte(2)
       ..write(obj.deadline)
       ..writeByte(3)
-      ..write(obj.tasks);
+      ..write(obj.tasks)
+      ..writeByte(4)
+      ..write(obj.year);
   }
 
   @override

@@ -7,42 +7,35 @@ import 'package:hive/hive.dart';
 import 'year_provider.dart';
 import 'category_provider.dart';
 
-// デフォルトウィッシュリストのID（固定）
-const _defaultWishListId = 'default-wishlist';
-
 final wishListProvider =
     NotifierProvider<WishListNotifier, List<WishList>>(WishListNotifier.new);
 
-// デフォルトウィッシュリストを取得するプロバイダー
-final defaultWishListProvider = Provider<WishList?>((ref) {
+// 選択中の年度のウィッシュリストを取得するプロバイダー
+final currentYearWishListProvider = Provider<WishList?>((ref) {
   final wishLists = ref.watch(wishListProvider);
-  if (wishLists.isEmpty) return null;
-  // デフォルトウィッシュリストを探す、なければ最初のものを返す
-  return wishLists.firstWhere(
-    (w) => w.id == _defaultWishListId,
-    orElse: () => wishLists.first,
-  );
+  final selectedYear = ref.watch(selectedYearProvider);
+
+  if (wishLists.isEmpty || selectedYear == null) return null;
+
+  // 選択中の年度のウィッシュリストを探す
+  return wishLists.cast<WishList?>().firstWhere(
+        (w) => w?.year == selectedYear,
+        orElse: () => null,
+      );
 });
 
-// フィルタリングされたタスク一覧
+// カテゴリでフィルタリングされたタスク一覧
 final filteredTasksProvider = Provider<List<Task>>((ref) {
-  final wish = ref.watch(defaultWishListProvider);
+  final wish = ref.watch(currentYearWishListProvider);
   if (wish == null) return [];
 
-  final selectedYear = ref.watch(selectedYearProvider);
   final selectedCategory = ref.watch(selectedCategoryProvider);
 
-  return wish.tasks.where((task) {
-    // 年度フィルター（nullは「すべて」、タスクのyearがnullでも一致）
-    if (selectedYear != null && task.year != null && task.year != selectedYear) {
-      return false;
-    }
-    // カテゴリフィルター
-    if (selectedCategory != null && task.category != selectedCategory) {
-      return false;
-    }
-    return true;
-  }).toList();
+  if (selectedCategory == null) {
+    return wish.tasks;
+  }
+
+  return wish.tasks.where((task) => task.category == selectedCategory).toList();
 });
 
 // フィルター後の達成率
@@ -60,68 +53,69 @@ class WishListNotifier extends Notifier<List<WishList>> {
   @override
   List<WishList> build() {
     _box = Hive.box<WishList>('wishlists');
-    _ensureDefaultWishListExists();
-    _migrateMultipleWishLists();
+    _migrateOldData();
     return _box.values.toList();
   }
 
-  // デフォルトウィッシュリストが存在しない場合は作成
-  Future<void> _ensureDefaultWishListExists() async {
-    if (_box.isEmpty) {
-      final defaultWish = WishList(
-        id: _defaultWishListId,
-        title: 'ウィッシュログ',
-        tasks: [],
-      );
-      await _box.put(_defaultWishListId, defaultWish);
-    }
-  }
+  // 旧データのマイグレーション（yearがnullのウィッシュリストを処理）
+  Future<void> _migrateOldData() async {
+    final currentYear = DateTime.now().year;
 
-  // 複数ウィッシュリストがある場合、タスクを統合してマイグレーション
-  Future<void> _migrateMultipleWishLists() async {
-    if (_box.length <= 1) return;
+    for (final wish in _box.values.toList()) {
+      if (wish.year == null) {
+        // 旧データの場合、タスクを年度ごとに振り分け
+        final tasksByYear = <int, List<Task>>{};
 
-    // デフォルトウィッシュリストを取得または作成
-    WishList? defaultWish = _box.get(_defaultWishListId);
-    if (defaultWish == null) {
-      // デフォルトが無い場合は最初のものをデフォルトとして使用
-      final first = _box.values.first;
-      defaultWish = WishList(
-        id: _defaultWishListId,
-        title: 'ウィッシュログ',
-        tasks: List<Task>.from(first.tasks),
-      );
-      await _box.put(_defaultWishListId, defaultWish);
-    }
+        for (final task in wish.tasks) {
+          final taskYear = task.year ?? currentYear;
+          tasksByYear.putIfAbsent(taskYear, () => []).add(task);
+        }
 
-    // 他のウィッシュリストからタスクを統合
-    final allTasks = <Task>[];
-    allTasks.addAll(defaultWish.tasks);
+        // 各年度のウィッシュリストを作成
+        for (final entry in tasksByYear.entries) {
+          final yearWishId = 'wishlist-${entry.key}';
+          var yearWish = _box.get(yearWishId);
 
-    final keysToDelete = <String>[];
-    for (final wish in _box.values) {
-      if (wish.id != _defaultWishListId) {
-        allTasks.addAll(wish.tasks);
-        keysToDelete.add(wish.id);
+          if (yearWish == null) {
+            yearWish = WishList(
+              id: yearWishId,
+              title: '${entry.key}年の目標',
+              year: entry.key,
+              tasks: entry.value,
+            );
+            await _box.put(yearWishId, yearWish);
+          } else {
+            yearWish.tasks = [...yearWish.tasks, ...entry.value];
+            await yearWish.save();
+          }
+        }
+
+        // 旧ウィッシュリストを削除
+        await _box.delete(wish.id);
       }
     }
+  }
 
-    // タスクを統合して保存
-    defaultWish.tasks = allTasks;
-    await defaultWish.save();
+  // 指定年度のウィッシュリストを取得（なければ作成）
+  Future<WishList> getOrCreateYearWishList(int year) async {
+    final wishId = 'wishlist-$year';
+    var wish = _box.get(wishId);
 
-    // 他のウィッシュリストを削除
-    for (final key in keysToDelete) {
-      await _box.delete(key);
+    if (wish == null) {
+      wish = WishList(
+        id: wishId,
+        title: '$year年の目標',
+        year: year,
+        tasks: [],
+      );
+      await _box.put(wishId, wish);
+      _updateState();
     }
+
+    return wish;
   }
 
-  // デフォルトウィッシュリストを取得
-  WishList? get defaultWishList {
-    return _box.get(_defaultWishListId) ?? _box.values.firstOrNull;
-  }
-
-  // 状態を更新（新しいオブジェクトを作成してRiverpodに変更を検知させる）
+  // 状態を更新
   void _updateState() {
     state = _box.values
         .map((w) => w.copyWith(tasks: List<Task>.from(w.tasks)))
@@ -131,11 +125,10 @@ class WishListNotifier extends Notifier<List<WishList>> {
   // タスクを追加
   Future<void> addTask(
     String taskTitle, {
-    int? year,
+    required int year,
     TaskCategory? category,
   }) async {
-    final wish = defaultWishList;
-    if (wish == null) return;
+    final wish = await getOrCreateYearWishList(year);
     final task = Task(
       id: _uuid.v4(),
       title: taskTitle,
@@ -148,9 +141,11 @@ class WishListNotifier extends Notifier<List<WishList>> {
   }
 
   // タスクの完了状態をトグル
-  Future<void> toggleTaskComplete(String taskId) async {
-    final wish = defaultWishList;
+  Future<void> toggleTaskComplete(String taskId, int year) async {
+    final wishId = 'wishlist-$year';
+    final wish = _box.get(wishId);
     if (wish == null) return;
+
     final updated = wish.tasks.map((t) {
       if (t.id == taskId) return t.copyWith(isCompleted: !t.isCompleted);
       return t;
@@ -161,9 +156,11 @@ class WishListNotifier extends Notifier<List<WishList>> {
   }
 
   // タスクを削除
-  Future<void> removeTask(String taskId) async {
-    final wish = defaultWishList;
+  Future<void> removeTask(String taskId, int year) async {
+    final wishId = 'wishlist-$year';
+    final wish = _box.get(wishId);
     if (wish == null) return;
+
     wish.tasks = wish.tasks.where((t) => t.id != taskId).toList();
     await wish.save();
     _updateState();
