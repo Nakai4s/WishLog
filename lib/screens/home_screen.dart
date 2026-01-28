@@ -151,13 +151,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       return TaskTile(
                         task: task,
                         onToggle: () => notifier.toggleTaskComplete(task.id),
-                        onDelete: () async {
-                          final confirmed =
-                              await _showDeleteConfirmDialog(context, task.title);
-                          if (confirmed == true) {
-                            notifier.removeTask(task.id);
-                          }
-                        },
+                        onDelete: () => notifier.removeTask(task.id),
                       );
                     },
                   ),
@@ -206,33 +200,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Future<bool?> _showDeleteConfirmDialog(
-      BuildContext context, String taskTitle) async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('タスクを削除'),
-          content: Text('「$taskTitle」を削除しますか？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('削除'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
