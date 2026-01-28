@@ -6,13 +6,40 @@ import '../providers/wishlist_provider.dart';
 import '../providers/year_provider.dart';
 import '../providers/category_provider.dart';
 import '../widgets/task_tile.dart';
-import '../widgets/add_task_dialog.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final _taskController = TextEditingController();
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  void _addTask() {
+    if (_taskController.text.isEmpty) return;
+
+    final notifier = ref.read(wishListProvider.notifier);
+    final selectedYear = ref.read(selectedYearProvider);
+    final selectedCategory = ref.read(selectedCategoryProvider);
+
+    notifier.addTask(
+      _taskController.text,
+      year: selectedYear,
+      category: selectedCategory,
+    );
+    _taskController.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final wish = ref.watch(defaultWishListProvider);
     final notifier = ref.read(wishListProvider.notifier);
     final filteredTasks = ref.watch(filteredTasksProvider);
@@ -114,7 +141,7 @@ class HomeScreen extends ConsumerWidget {
           Expanded(
             child: filteredTasks.isEmpty
                 ? const Center(
-                    child: Text('タスクがありません\n+ボタンで追加しましょう',
+                    child: Text('タスクがありません\n下の入力欄から追加しましょう',
                         textAlign: TextAlign.center),
                   )
                 : ListView.builder(
@@ -135,23 +162,49 @@ class HomeScreen extends ConsumerWidget {
                     },
                   ),
           ),
+
+          // タスク入力欄
+          Container(
+            padding: const EdgeInsets.all(8.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _taskController,
+                      decoration: InputDecoration(
+                        hintText: 'タスクを入力...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                      onSubmitted: (_) => _addTask(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: _addTask,
+                    icon: const Icon(Icons.add),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await showDialog<AddTaskResult>(
-            context: context,
-            builder: (context) => const AddTaskDialog(),
-          );
-          if (result != null && result.title.isNotEmpty) {
-            notifier.addTask(
-              result.title,
-              year: result.year,
-              category: result.category,
-            );
-          }
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }
