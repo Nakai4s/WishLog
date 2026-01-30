@@ -1,11 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../models/task.dart';
-import '../models/category.dart';
 import '../models/wishlist.dart';
 import 'package:hive/hive.dart';
 import 'year_provider.dart';
-import 'category_provider.dart';
+
+// ステータスフィルター
+enum StatusFilter { all, incomplete, completed }
+
+final statusFilterProvider =
+    NotifierProvider<StatusFilterNotifier, StatusFilter>(
+        StatusFilterNotifier.new);
+
+class StatusFilterNotifier extends Notifier<StatusFilter> {
+  @override
+  StatusFilter build() => StatusFilter.all;
+
+  void setFilter(StatusFilter filter) {
+    state = filter;
+  }
+}
 
 final wishListProvider =
     NotifierProvider<WishListNotifier, List<WishList>>(WishListNotifier.new);
@@ -17,30 +31,37 @@ final currentYearWishListProvider = Provider<WishList?>((ref) {
 
   if (wishLists.isEmpty || selectedYear == null) return null;
 
-  // 選択中の年度のウィッシュリストを探す
   return wishLists.cast<WishList?>().firstWhere(
         (w) => w?.year == selectedYear,
         orElse: () => null,
       );
 });
 
-// カテゴリでフィルタリングされたタスク一覧
-final filteredTasksProvider = Provider<List<Task>>((ref) {
+// 年度の全タスク（ステータスフィルター前）
+final yearTasksProvider = Provider<List<Task>>((ref) {
   final wish = ref.watch(currentYearWishListProvider);
   if (wish == null) return [];
-
-  final selectedCategory = ref.watch(selectedCategoryProvider);
-
-  if (selectedCategory == null) {
-    return wish.tasks;
-  }
-
-  return wish.tasks.where((task) => task.category == selectedCategory).toList();
+  return wish.tasks;
 });
 
-// フィルター後の達成率
+// ステータスフィルター適用後のタスク一覧
+final filteredTasksProvider = Provider<List<Task>>((ref) {
+  final tasks = ref.watch(yearTasksProvider);
+  final statusFilter = ref.watch(statusFilterProvider);
+
+  switch (statusFilter) {
+    case StatusFilter.all:
+      return tasks;
+    case StatusFilter.incomplete:
+      return tasks.where((t) => !t.isCompleted).toList();
+    case StatusFilter.completed:
+      return tasks.where((t) => t.isCompleted).toList();
+  }
+});
+
+// 達成率（年度全体ベース）
 final filteredCompletionRateProvider = Provider<double>((ref) {
-  final tasks = ref.watch(filteredTasksProvider);
+  final tasks = ref.watch(yearTasksProvider);
   if (tasks.isEmpty) return 0.0;
   final completedCount = tasks.where((t) => t.isCompleted).length;
   return completedCount / tasks.length;
@@ -60,10 +81,10 @@ class WishListNotifier extends Notifier<List<WishList>> {
   // 旧データのマイグレーション（yearがnullのウィッシュリストを処理）
   Future<void> _migrateOldData() async {
     final currentYear = DateTime.now().year;
+    var migrated = false;
 
     for (final wish in _box.values.toList()) {
       if (wish.year == null) {
-        // 旧データの場合、タスクを年度ごとに振り分け
         final tasksByYear = <int, List<Task>>{};
 
         for (final task in wish.tasks) {
@@ -71,7 +92,6 @@ class WishListNotifier extends Notifier<List<WishList>> {
           tasksByYear.putIfAbsent(taskYear, () => []).add(task);
         }
 
-        // 各年度のウィッシュリストを作成
         for (final entry in tasksByYear.entries) {
           final yearWishId = 'wishlist-${entry.key}';
           var yearWish = _box.get(yearWishId);
@@ -90,13 +110,16 @@ class WishListNotifier extends Notifier<List<WishList>> {
           }
         }
 
-        // 旧ウィッシュリストを削除
         await _box.delete(wish.id);
+        migrated = true;
       }
+    }
+
+    if (migrated) {
+      _updateState();
     }
   }
 
-  // 指定年度のウィッシュリストを取得（なければ作成）
   Future<WishList> getOrCreateYearWishList(int year) async {
     final wishId = 'wishlist-$year';
     var wish = _box.get(wishId);
@@ -115,32 +138,24 @@ class WishListNotifier extends Notifier<List<WishList>> {
     return wish;
   }
 
-  // 状態を更新
   void _updateState() {
     state = _box.values
         .map((w) => w.copyWith(tasks: List<Task>.from(w.tasks)))
         .toList();
   }
 
-  // タスクを追加
-  Future<void> addTask(
-    String taskTitle, {
-    required int year,
-    TaskCategory? category,
-  }) async {
+  Future<void> addTask(String taskTitle, {required int year}) async {
     final wish = await getOrCreateYearWishList(year);
     final task = Task(
       id: _uuid.v4(),
       title: taskTitle,
       year: year,
-      category: category,
     );
     wish.tasks = [...wish.tasks, task];
     await wish.save();
     _updateState();
   }
 
-  // タスクの完了状態をトグル
   Future<void> toggleTaskComplete(String taskId, int year) async {
     final wishId = 'wishlist-$year';
     final wish = _box.get(wishId);
@@ -155,7 +170,6 @@ class WishListNotifier extends Notifier<List<WishList>> {
     _updateState();
   }
 
-  // タスクを削除
   Future<void> removeTask(String taskId, int year) async {
     final wishId = 'wishlist-$year';
     final wish = _box.get(wishId);

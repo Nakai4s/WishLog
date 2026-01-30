@@ -1,10 +1,8 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/category.dart';
 import '../providers/wishlist_provider.dart';
 import '../providers/year_provider.dart';
-import '../providers/category_provider.dart';
 import '../widgets/task_tile.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -24,18 +22,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _addTask() {
-    if (_taskController.text.isEmpty) return;
+    final title = _taskController.text.trim();
+    if (title.isEmpty) return;
 
     final notifier = ref.read(wishListProvider.notifier);
     final selectedYear = ref.read(selectedYearProvider);
-    final selectedCategory = ref.read(selectedCategoryProvider);
 
     if (selectedYear == null) return;
 
     notifier.addTask(
-      _taskController.text,
+      title,
       year: selectedYear,
-      category: selectedCategory,
     );
     _taskController.clear();
   }
@@ -44,65 +41,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final notifier = ref.read(wishListProvider.notifier);
     final filteredTasks = ref.watch(filteredTasksProvider);
+    final yearTasks = ref.watch(yearTasksProvider);
     final completionRate = ref.watch(filteredCompletionRateProvider);
     final selectedYear = ref.watch(selectedYearProvider);
-    final selectedCategory = ref.watch(selectedCategoryProvider);
     final availableYears = ref.watch(availableYearsProvider);
+    final statusFilter = ref.watch(statusFilterProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('ウィッシュログ'),
-        actions: [
-          // 年度選択ドロップダウン
-          DropdownButton<int>(
-            value: selectedYear ?? DateTime.now().year,
-            underline: const SizedBox(),
-            icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-            dropdownColor: Theme.of(context).primaryColor,
-            style: const TextStyle(color: Colors.white),
-            items: availableYears.map((year) => DropdownMenuItem<int>(
-                  value: year,
-                  child: Text('$year年'),
-                )).toList(),
-            onChanged: (value) {
-              if (value != null) {
-                ref.read(selectedYearProvider.notifier).setYear(value);
-              }
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Column(
         children: [
-          // カテゴリフィルター
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              children: [
-                FilterChip(
-                  label: const Text('すべて'),
-                  selected: selectedCategory == null,
-                  onSelected: (_) {
-                    ref.read(selectedCategoryProvider.notifier).setCategory(null);
+          // 年度選択ドロップダウン
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: InputDecorator(
+              decoration: const InputDecoration(
+                labelText: '年度',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  value: selectedYear ?? DateTime.now().year,
+                  isDense: true,
+                  isExpanded: true,
+                  items: availableYears.map((year) => DropdownMenuItem<int>(
+                        value: year,
+                        child: Text('$year年'),
+                      )).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(selectedYearProvider.notifier).setYear(value);
+                    }
                   },
                 ),
-                const SizedBox(width: 4),
-                ...TaskCategory.values.map((category) => Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: FilterChip(
-                        label: Text(category.displayName),
-                        selected: selectedCategory == category,
-                        onSelected: (_) {
-                          ref.read(selectedCategoryProvider.notifier).setCategory(
-                              selectedCategory == category ? null : category);
-                        },
-                      ),
-                    )),
-              ],
+              ),
             ),
           ),
+          const Divider(),
 
           // 進捗バー部分
           Padding(
@@ -117,11 +95,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
-              '達成率 ${(completionRate * 100).toStringAsFixed(0)}%',
+              '${yearTasks.where((t) => t.isCompleted).length} / ${yearTasks.length} 完了',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
-          const Divider(),
+
+          // ステータスフィルター
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('すべて'),
+                  selected: statusFilter == StatusFilter.all,
+                  onSelected: (_) {
+                    ref.read(statusFilterProvider.notifier).setFilter(StatusFilter.all);
+                  },
+                ),
+                const SizedBox(width: 4),
+                FilterChip(
+                  label: const Text('未完了'),
+                  selected: statusFilter == StatusFilter.incomplete,
+                  onSelected: (_) {
+                    ref.read(statusFilterProvider.notifier).setFilter(StatusFilter.incomplete);
+                  },
+                ),
+                const SizedBox(width: 4),
+                FilterChip(
+                  label: const Text('完了'),
+                  selected: statusFilter == StatusFilter.completed,
+                  onSelected: (_) {
+                    ref.read(statusFilterProvider.notifier).setFilter(StatusFilter.completed);
+                  },
+                ),
+              ],
+            ),
+          ),
 
           // タスク一覧
           Expanded(
